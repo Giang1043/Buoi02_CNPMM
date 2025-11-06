@@ -96,3 +96,28 @@ let updateUser = (data) =>{
         }
     })
 }
+
+//hàm xóa user
+let deleteUserById = (userId) => {
+    return new Promise(async (resolve, reject) => { //dùng Promise đảm bảo luôn trả kết quả, trong xử lý bất đồng bộ
+        try {
+            let user = await db.User.findOne({
+                where: { id: userId }
+            })
+            if(user){
+                user.destroy();
+            }
+            resolve(); //là return
+        } catch (e) {
+            reject(e);
+        }
+    })
+}
+
+module.exports = { //xuất hàm ra bên ngoài
+    createNewUser:createNewUser,
+    getAllUser: getAllUser,
+    getUserInfoById:getUserInfoById,
+    updateUser: updateUser,
+    deleteUserById: deleteUserById
+}
