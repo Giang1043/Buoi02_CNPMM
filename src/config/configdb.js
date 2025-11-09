@@ -1,19 +1,18 @@
-import { Sequelize } from 'sequelize';
-//const { Sequelize } = require('sequelize');//ES5 module
+import mongoose from 'mongoose';
 
-// Option 3: Passing parameters separately (other dialects)
-const sequelize = new Sequelize('node_fulltask', 'root', '014789', {
-    host: 'localhost',
-    dialect: 'mysql',
-    logging: false
-});
+// Lấy chuỗi kết nối từ biến môi trường (Ví dụ: MONGO_URI=mongodb://localhost:27017/my_user_db)
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/node_fulltask_mongo';
 
 let connectDB = async () => {
     try {
-        await sequelize.authenticate();
-        console.log('Connection has been established successfully.');
+        // Sử dụng mongoose.connect() để kết nối
+        await mongoose.connect(MONGO_URI);
+        console.log('Connection to MongoDB has been established successfully.');
     } catch (error) {
-        console.error('Unable to connect to the database:', error);
+        // SequelizeAccessDeniedError được thay thế bằng lỗi của Mongoose
+        console.error('Unable to connect to the MongoDB database:', error);
+        // Tùy chọn: Dừng ứng dụng nếu không kết nối được database
+        // process.exit(1); 
     }
 }
 

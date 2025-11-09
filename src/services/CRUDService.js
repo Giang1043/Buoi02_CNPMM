@@ -1,37 +1,14 @@
-import bcrypt from 'bcryptjs'; //import thư viện bcryptjs
-import db from '../models/index'; //import database
+import bcrypt from 'bcryptjs';
+import User from '../models/user'; // Import Model User Mongoose
+// BỎ: import { where } from 'sequelize';
 
-import { where } from 'sequelize';
-const salt = bcrypt.genSaltSync(10); // thuật toán hash password
-
-let createNewUser = async (data) => { //hàm tạo user với tham số data
-    return new Promise(async (resolve, reject) => { //dùng Promise đảm bảo luôn trả kết quả, trong xử lý bất đồng bộ
-        try {
-            let hashPasswordFromBcrypt = await hashUserPassword(data.password)
-            await db.User.create({
-                email: data.email,
-                password: hashPasswordFromBcrypt,
-                firstName: data.firstName,
-                lastName: data.lastName,
-                address: data.address,
-                phoneNumber: data.phoneNumber,
-                gender: data.gender === '1' ? true : false,
-                roleId: data.roleId
-            })
-            resolve('OK create a new user successfull');
-            // console.log('data from service');
-            //console.log(data) //log dữ liệu từ biến data
-            //console.log(hashPasswordFromBcrypt);
-        } catch (e) {
-            reject(e)
-        }
-    })
-}
+const salt = bcrypt.genSaltSync(10); 
 
 let hashUserPassword = (password) => {
-    return new Promise(async (resolve, reject) => { //dùng Promise đảm bảo luôn trả kết quả, trong xử lý bất đồng bộ
+    return new Promise(async (resolve, reject) => { 
         try {
-            let hashPassword = await bcrypt.hashSync("B4c0/\/", salt);
+            // Thay đổi hàm hash cho phù hợp với cách bạn muốn dùng bcrypt
+            let hashPassword = await bcrypt.hash(password, salt); // Sử dụng bcrypt.hash để xử lý bất đồng bộ
             resolve(hashPassword);
         } catch (e) {
             reject(e);
@@ -39,32 +16,55 @@ let hashUserPassword = (password) => {
     })
 }
 
-//lấy tất cả findAll CRUD
+let createNewUser = async (data) => { 
+    return new Promise(async (resolve, reject) => { 
+        try {
+            let hashPasswordFromBcrypt = await hashUserPassword(data.password);
+
+            // THAY THẾ: db.User.create -> User.create (Mongoose)
+            await User.create({
+                email: data.email,
+                password: hashPasswordFromBcrypt,
+                firstName: data.firstName,
+                lastName: data.lastName,
+                address: data.address,
+                phoneNumber: data.phoneNumber,
+                // Mongoose tự chuyển '0'/'1' sang false/true nếu kiểu là Boolean
+                gender: data.gender === '1' ? true : false, 
+                roleId: data.roleId
+            });
+            resolve('OK create a new user successfull');
+        } catch (e) {
+            reject(e)
+        }
+    })
+}
+
+// lấy tất cả findAll CRUD
 let getAllUser = () => {
-    return new Promise(async (resolve, reject) => { //dùng Promise đảm bảo luôn trả kết quả, trong xử lý bất đồng bộ
+    return new Promise(async (resolve, reject) => { 
         try {
-            let users = db.User.findAll({
-                raw: true, //hiện dữ liệu gốc
-            });
-            resolve(users); //hàm trả về kết quả
+            // THAY THẾ: db.User.findAll({raw: true}) -> User.find({}) (Mongoose)
+            let users = await User.find({}).lean(); // .lean() giúp trả về plain JavaScript objects (tương tự raw: true)
+            resolve(users);
         } catch (e) {
             reject(e)
         }
     })
 }
 
-//lấy findOne CRUD
+// lấy findOne CRUD
 let getUserInfoById = (userId) => {
-    return new Promise(async (resolve, reject) => { //dùng Promise đảm bảo luôn trả kết quả, trong xử lý bất đồng bộ
+    return new Promise(async (resolve, reject) => { 
         try {
-            let user = await db.User.findOne({
-                where: { id: userId }, //query điều kiện cho tham số
-                raw: true
-            });
+            // THAY THẾ: db.User.findOne({where: {id: userId}}) -> User.findById(userId) (Mongoose)
+            // Trong MongoDB/Mongoose, ID là '_id'
+            let user = await User.findById(userId).lean(); 
+            
             if(user){
-                resolve(user); //hàm trả về kết quả
+                resolve(user);
             }else{
-                resolve({}); //hàm trả về kết quả rỗng
+                resolve({});
             }
         } catch (e) {
             reject(e)
@@ -72,49 +72,49 @@ let getUserInfoById = (userId) => {
     })
 }
 
-//hàm put CRUD
+// hàm put CRUD
 let updateUser = (data) =>{
-    return new Promise(async (resolve, reject) => { //dùng Promise đảm bảo luôn trả kết quả, trong xử lý bất đồng bộ
+    return new Promise(async (resolve, reject) => { 
         try {
-            let user = await db.User.findOne({
-                where: { id: data.id } //query điều kiện cho tham số
-            });
-            if(user){
-                user.firstName = data.firstName;
-                user.lastName = data.lastName;
-                user.address = data.address;
+            // THAY THẾ: tìm user và dùng .save() -> dùng Mongoose .updateOne()
+            let result = await User.updateOne(
+                { _id: data.id }, // Điều kiện tìm kiếm (MongoDB dùng _id)
+                {
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    address: data.address
+                }
+            );
 
-                await user.save();
-                //lấy danh sách user
-                let allUsers = await db.User.findAll();
+            if(result.modifiedCount > 0){
+                 // Lấy danh sách user mới sau khi update
+                let allUsers = await getAllUser(); 
                 resolve(allUsers);
-            }else{
-                resolve(); //hàm trả về kết quả rỗng
+            } else {
+                 resolve([]); // Trả về rỗng nếu không tìm thấy hoặc không có gì thay đổi
             }
+           
         } catch (e) {
             reject(e)
         }
     })
 }
 
-//hàm xóa user
+// hàm xóa user
 let deleteUserById = (userId) => {
-    return new Promise(async (resolve, reject) => { //dùng Promise đảm bảo luôn trả kết quả, trong xử lý bất đồng bộ
+    return new Promise(async (resolve, reject) => { 
         try {
-            let user = await db.User.findOne({
-                where: { id: userId }
-            })
-            if(user){
-                user.destroy();
-            }
-            resolve(); //là return
+            // THAY THẾ: tìm user và dùng .destroy() -> dùng Mongoose .findByIdAndDelete(userId)
+            await User.findByIdAndDelete(userId); 
+            
+            resolve(); // Dùng resolve() vì hàm này không cần trả về dữ liệu
         } catch (e) {
             reject(e);
         }
     })
 }
 
-module.exports = { //xuất hàm ra bên ngoài
+module.exports = { 
     createNewUser:createNewUser,
     getAllUser: getAllUser,
     getUserInfoById:getUserInfoById,

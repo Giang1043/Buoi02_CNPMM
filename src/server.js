@@ -1,10 +1,10 @@
-import express from "express"; //nap express
-import bodyParser from "body-parser"; //nap body-parser lấy tham số từ client /user?id=7
-import viewEngine from "./config/viewEngine"; //nap viewEngine
-import initWebRoutes from './route/web'; //nap file web từ Route
-import connectDB from './config/configdb';
+import express from "express"; 
+import bodyParser from "body-parser"; 
+import viewEngine from "./config/viewEngine"; 
+import initWebRoutes from './route/web'; 
+import connectDB from './config/configdb'; // Import hàm kết nối MongoDB mới
 
-require('dotenv').config(); //gọi hàm config của dotenv để chạy lệnh process.env.PORT
+require('dotenv').config(); 
 
 let app = express();
 
@@ -14,12 +14,11 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 viewEngine(app);
 initWebRoutes(app);
-connectDB();
+connectDB(); // Gọi hàm kết nối MongoDB
 
-let port = process.env.PORT || 6969; //lấy tham số port lấy từ .env
-//Port === undefined => port = 6969
+let port = process.env.PORT || 6969; 
+
 //chạy server
 app.listen(port, () => {
-    //callback
     console.log("Backend Nodejs is running on the port: " + port);
 });
