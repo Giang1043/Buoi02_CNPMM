@@ -1,10 +1,10 @@
-import db from '../models/index'; //import database
+import User from '../models/user'; // Import Model User Mongoose trực tiếp
 import CRUDService from '../services/CRUDService' //import service
 
 //ham getHomePage
 let getHomePage = async (req, res) => {
     try {
-        let data = await db.User.findAll(); //lấy dữ liệu từ models/index
+        let data = await User.find().lean(); 
         console.log('.......................');
         console.log(data);
         console.log('.......................');
